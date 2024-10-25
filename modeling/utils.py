@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
+from sklearn.model_selection import train_test_split
 import torch
 
 def generate_data(end_date, days, num_ascending_start, num_descending_start, swap_count):
@@ -48,6 +50,44 @@ def generate_data(end_date, days, num_ascending_start, num_descending_start, swa
     data.sort_index(inplace=True)
 
     return data, seq_len
+
+def create_sequences(data_returns, X_seq_len, Y_seq_len, test_size=0.2):
+    # Calculate batch size and input size
+    batch_size = len(data_returns) - X_seq_len - Y_seq_len + 1
+    input_size = len(data_returns.columns)
+
+    # Convert DataFrame to NumPy for easier slicing
+    data_returns_np = data_returns.values
+
+    # Create sequences
+    X = []
+    Y = []
+    for i in range(batch_size):
+        first_y_index = i + X_seq_len
+        
+        X.append(data_returns_np[i:first_y_index])
+
+        # Get the index of the highest return for the next day
+        next_day_returns = data_returns_np[first_y_index:first_y_index + Y_seq_len]
+        Y.append(next_day_returns)
+
+    # Convert to NumPy arrays
+    X = np.array(X)  # Shape: (batch_size, X_seq_len, input_size)
+    Y = np.array(Y)  # Shape: (batch_size, Y_seq_len, input_size)
+
+    # Split into train and test sets
+    split_index = int(len(X) * (1 - test_size))
+    X_train, X_test = X[:split_index], X[split_index:]
+    Y_train, Y_test = Y[:split_index], Y[split_index:]
+    # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=random_state)
+
+    # Convert to PyTorch tensors
+    X_train = torch.tensor(X_train, dtype=torch.float32)
+    X_test = torch.tensor(X_test, dtype=torch.float32)
+    Y_train = torch.tensor(Y_train, dtype=torch.float32)
+    Y_test = torch.tensor(Y_test, dtype=torch.float32)
+
+    return X_train, X_test, Y_train, Y_test
 
 
 def get_Y_max_one(Y):
@@ -127,3 +167,37 @@ def get_Y_sharpe_light(X, Y):
     Y_sharpe_light = torch.where(Y_sharpe_positive_sums == 0, do_not_invest, Y_sharpe_positive_shares)
 
     return Y_sharpe_light
+
+
+def calculate_max_return(Y):
+    next_day_Y = Y[:, 0, :] 
+    max_daily_returns = torch.max(next_day_Y, dim=1).values + 1
+    max_total_returns = torch.prod(max_daily_returns) - 1
+
+    return max_daily_returns, max_total_returns
+
+def calculate_portfolio_return(output_weights, Y):
+    next_day_Y = Y[:, 0, :] 
+    portfolio_daily_returns = (next_day_Y * output_weights).sum(dim=1) + 1
+    portfolio_total_returns = torch.prod(portfolio_daily_returns) - 1
+
+    return portfolio_daily_returns, portfolio_total_returns
+
+
+def plot_loss_curves(results):    
+    # Get the loss values of the results dictionary (training and test)
+    loss = results['train_loss']
+    test_loss = results['test_loss']
+
+    # Figure out how many epochs there were
+    epochs = range(len(results['train_loss']))
+
+    # Setup a plot 
+    plt.figure(figsize=(15, 7))
+
+    # Plot loss
+    plt.plot(epochs, loss, label='train_loss')
+    plt.plot(epochs, test_loss, label='test_loss')
+    plt.title('Loss')
+    plt.xlabel('Epochs')
+    plt.legend()
