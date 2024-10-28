@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib.ticker import ScalarFormatter
 
 from sklearn.model_selection import train_test_split
 import torch
@@ -211,6 +212,8 @@ def plot_asset_share(df):
 
     # Customize x-axis to display the year only once
     plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+
+    plt.gca().yaxis.set_major_formatter(ScalarFormatter(useOffset=False, useMathText=False))
 
     plt.title("Asset Share Over Time")
     plt.xlabel("Year")
