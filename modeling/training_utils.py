@@ -1,6 +1,6 @@
 import torch
 
-def train_step(model, X_train, Y_train, Y_train_true_labels, criterion, optimizer, profit_calc_fn):
+def train_step(model, X_train, Y_train, Y_train_true_labels, criterion, optimizer, profit_calc_fn, asset_count):
     model.train()
     optimizer.zero_grad()
 
@@ -9,7 +9,7 @@ def train_step(model, X_train, Y_train, Y_train_true_labels, criterion, optimize
 
     # Calculate loss
     loss = criterion(outputs, Y_train_true_labels)
-    _, profit = profit_calc_fn(output_weights=outputs, Y=Y_train)
+    _, profit = profit_calc_fn(output_weights=outputs, Y=Y_train[:, :, :asset_count])
 
     # Backward pass and optimization
     loss.backward()
@@ -17,7 +17,7 @@ def train_step(model, X_train, Y_train, Y_train_true_labels, criterion, optimize
 
     return loss, profit
 
-def test_step(model, X_test, Y_test, Y_test_true_labels, criterion, profit_calc_fn):
+def test_step(model, X_test, Y_test, Y_test_true_labels, criterion, profit_calc_fn, asset_count):
     model.eval()
     with torch.no_grad():
         # Forward pass
@@ -25,7 +25,7 @@ def test_step(model, X_test, Y_test, Y_test_true_labels, criterion, profit_calc_
 
         # Calculate loss
         test_loss = criterion(test_outputs, Y_test_true_labels)
-        _, test_profit = profit_calc_fn(output_weights=test_outputs, Y=Y_test)
+        _, test_profit = profit_calc_fn(output_weights=test_outputs, Y=Y_test[:, :, :asset_count])
 
     return test_loss, test_profit
 
@@ -40,6 +40,7 @@ def train(model: torch.nn.Module,
           optimizer: torch.optim.Optimizer,
           criterion: torch.nn.Module,
           profit_calc_fn,
+          asset_count,
           epochs: int,
           print_every: int):
     
@@ -60,13 +61,15 @@ def train(model: torch.nn.Module,
                                               Y_train_true_labels=Y_train_true_labels,
                                               criterion=criterion,
                                               optimizer=optimizer,
-                                              profit_calc_fn=profit_calc_fn)
+                                              profit_calc_fn=profit_calc_fn,
+                                              asset_count=asset_count)
         test_loss, test_profit = test_step(model=model,
                                         X_test=X_test,
                                         Y_test=Y_test,
                                         Y_test_true_labels=Y_test_true_labels,
                                         criterion=criterion,
-                                        profit_calc_fn=profit_calc_fn)
+                                        profit_calc_fn=profit_calc_fn,
+                                        asset_count=asset_count)
         # 4. Print out what's happening
         if (epoch+1) % print_every == 0:
             print(

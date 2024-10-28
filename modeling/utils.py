@@ -80,7 +80,7 @@ def create_sequences(data_returns, X_seq_len, Y_seq_len, test_size, device):
     split_index = int(len(X) * (1 - test_size))
     X_train, X_test = X[:split_index], X[split_index:]
     Y_train, Y_test = Y[:split_index], Y[split_index:]
-    # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=random_state)
+    # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=42)
 
     # Convert to PyTorch tensors
     X_train = torch.tensor(X_train, dtype=torch.float32).to(device)

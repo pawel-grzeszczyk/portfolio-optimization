@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 class LSTMModel(nn.Module): 
-    def __init__(self, input_size, hidden_size, output_size, num_layers, device, dropout_rate=0.5): 
+    def __init__(self, input_size, hidden_size, output_size, num_layers, device, dropout_rate=0.5, max_norm_value=0.0): 
         super(LSTMModel, self).__init__() 
 
         self.device = device #device
@@ -12,6 +12,7 @@ class LSTMModel(nn.Module):
         self.hidden_size = hidden_size #hidden state 
         self.output_size = output_size #number of classes 
         self.num_layers = num_layers #number of layers 
+        self.max_norm_value = max_norm_value  # max norm constraint value
 
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True, dropout=dropout_rate) #lstm 
         self.fc =  nn.Linear(hidden_size, hidden_size) #fully connected 1 
@@ -30,6 +31,12 @@ class LSTMModel(nn.Module):
         x = self.fc(x) 
         x = self.relu(x) 
         x = self.fc_out(x) 
+
+        # Apply max norm constraint to biases after forward pass
+        for name, param in self.named_parameters():
+            if 'bias' in name:
+                with torch.no_grad():
+                    param.data = param.data / max(1.0, param.data.norm(p=2) / self.max_norm_value)
 
         # Pass the output through the softmax function (to get sum equal to 1) 
         out = self.softmax(x)
