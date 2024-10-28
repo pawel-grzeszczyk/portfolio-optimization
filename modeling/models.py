@@ -3,8 +3,11 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 class LSTMModel(nn.Module): 
-    def __init__(self, input_size, hidden_size, output_size, num_layers, dropout_rate=0.5): 
+    def __init__(self, input_size, hidden_size, output_size, num_layers, device, dropout_rate=0.5): 
         super(LSTMModel, self).__init__() 
+
+        self.device = device #device
+
         self.input_size = input_size #input size 
         self.hidden_size = hidden_size #hidden state 
         self.output_size = output_size #number of classes 
@@ -17,8 +20,8 @@ class LSTMModel(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         
     def forward(self, x): 
-        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)) #hidden state 
-        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)) #internal state 
+        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(self.device) #hidden state 
+        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size)).to(self.device) #internal state 
 
         # LSTM layer 
         lstm_out, (hn, cn) = self.lstm(x, (h_0, c_0)) #lstm with input, hidden, and internal state 

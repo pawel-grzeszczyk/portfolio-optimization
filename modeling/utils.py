@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 from sklearn.model_selection import train_test_split
 import torch
@@ -51,7 +52,7 @@ def generate_data(end_date, days, num_ascending_start, num_descending_start, swa
 
     return data, seq_len
 
-def create_sequences(data_returns, X_seq_len, Y_seq_len, test_size=0.2):
+def create_sequences(data_returns, X_seq_len, Y_seq_len, test_size, device):
     # Calculate batch size and input size
     batch_size = len(data_returns) - X_seq_len - Y_seq_len + 1
     input_size = len(data_returns.columns)
@@ -82,10 +83,10 @@ def create_sequences(data_returns, X_seq_len, Y_seq_len, test_size=0.2):
     # X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=test_size, random_state=random_state)
 
     # Convert to PyTorch tensors
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    X_test = torch.tensor(X_test, dtype=torch.float32)
-    Y_train = torch.tensor(Y_train, dtype=torch.float32)
-    Y_test = torch.tensor(Y_test, dtype=torch.float32)
+    X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
+    X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+    Y_train = torch.tensor(Y_train, dtype=torch.float32).to(device)
+    Y_test = torch.tensor(Y_test, dtype=torch.float32).to(device)
 
     return X_train, X_test, Y_train, Y_test
 
@@ -201,3 +202,20 @@ def plot_loss_curves(results):
     plt.title('Loss')
     plt.xlabel('Epochs')
     plt.legend()
+
+
+def plot_asset_share(df):
+    plt.figure(figsize=(10, 6))
+    for column in df.columns:
+        plt.plot(df.index, df[column], label=column)
+
+    # Customize x-axis to display the year only once
+    plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+
+    plt.title("Asset Share Over Time")
+    plt.xlabel("Year")
+    plt.ylabel("Value")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
